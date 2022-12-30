@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm/dist';
+
 import { AppController } from './app.controller';
+
 import { AppService } from './app.service';
+
 import { ProductsModule } from './module/products/products.module';
 
 const typeOrmConfig = {
