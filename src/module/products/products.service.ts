@@ -3,17 +3,22 @@ import {
   BadRequestException,
   NotFoundException,
   InternalServerErrorException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm/dist';
 import { Repository } from 'typeorm';
 
 import { CreateProductDto } from './dto/create-product.dto';
+import { StockProductDto } from './dto/stock-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 import { Product } from './entities/product.entity';
 
 @Injectable()
 export class ProductsService {
+  private MIN_STOCK = 0;
+  private MAX_STOCK = 1000;
+
   constructor(
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
@@ -83,5 +88,78 @@ export class ProductsService {
     } catch (error) {
       throw new InternalServerErrorException('The product was not deleted');
     }
+  }
+
+  async updateStock(stock: StockProductDto) {
+    const product = await this.findOne(stock.id);
+
+    if (!product)
+      throw new NotFoundException(
+        `the product with id ${stock.id} does not exist`,
+      );
+
+    if (product.deleted)
+      throw new NotFoundException(`the product with id ${stock.id} is deleted`);
+
+    try {
+      const rows = await this.productRepository.update(
+        { id: stock.id },
+        { stock: stock.stock },
+      );
+
+      return rows.affected === 1;
+    } catch (error) {
+      throw new InternalServerErrorException('The product was not deleted');
+    }
+  }
+
+  async incrementStock(s: StockProductDto) {
+    const product: CreateProductDto = await this.findOne(s.id);
+
+    if (!product) {
+      throw new ConflictException('El producto con id ' + s.id + ' no existe');
+    }
+
+    if (product.deleted) {
+      throw new ConflictException(
+        'El producto con id ' + s.id + ' esta borrado',
+      );
+    }
+
+    let stock = 0;
+    if (s.stock + product.stock > this.MAX_STOCK) {
+      stock = this.MAX_STOCK;
+    } else {
+      stock = s.stock + product.stock;
+    }
+
+    const rows = await this.productRepository.update({ id: s.id }, { stock });
+
+    return rows.affected == 1;
+  }
+
+  async decrementStock(s: StockProductDto) {
+    const product: CreateProductDto = await this.findOne(s.id);
+
+    if (!product) {
+      throw new ConflictException('El producto con id ' + s.id + ' no existe');
+    }
+
+    if (product.deleted) {
+      throw new ConflictException(
+        'El producto con id ' + s.id + ' esta borrado',
+      );
+    }
+
+    let stock = 0;
+    if (product.stock - s.stock < this.MIN_STOCK) {
+      stock = this.MIN_STOCK;
+    } else {
+      stock = product.stock - s.stock;
+    }
+
+    const rows = await this.productRepository.update({ id: s.id }, { stock });
+
+    return rows.affected == 1;
   }
 }

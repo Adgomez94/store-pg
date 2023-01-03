@@ -11,9 +11,12 @@ import {
   HttpStatus,
   Put,
 } from '@nestjs/common';
+
 import { ProductsService } from './products.service';
+
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { StockProductDto } from './dto/stock-product.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -52,6 +55,22 @@ export class ProductsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.remove(id, false);
+  }
+
+  @Patch('/stock')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  updateStock(@Body() stock: StockProductDto) {
+    return this.productsService.updateStock(stock);
+  }
+
+  @Patch('/increment-stock')
+  incrementStock(@Body() stock: StockProductDto) {
+    return this.productsService.incrementStock(stock);
+  }
+
+  @Patch('/decrement-stock')
+  decrementStock(@Body() stock: StockProductDto) {
+    return this.productsService.decrementStock(stock);
   }
 
   @Delete(':id')
